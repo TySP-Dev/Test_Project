@@ -15,7 +15,9 @@ source venv/bin/activate
 export ANTHROPIC_API_KEY='your-api-key-here'
 
 # Run the automation
-python jko_course_automation.py 'YOUR_COURSE_URL'
+python jko_course_automation.py
+
+# Browser opens -> Log in -> Click on course -> Press Enter -> AI does the rest!
 ```
 
 ## Option 2: Manual Setup
@@ -33,7 +35,7 @@ playwright install chromium
 export ANTHROPIC_API_KEY='your-api-key-here'
 
 # Run
-python jko_course_automation.py 'YOUR_COURSE_URL'
+python jko_course_automation.py
 ```
 
 ## Option 3: Using Ollama (Free, Local)
@@ -49,29 +51,32 @@ ollama pull llava
 ollama serve
 
 # Run the automation with Ollama
-python jko_course_automation.py 'YOUR_COURSE_URL' --ai-provider ollama
+python jko_course_automation.py --ai-provider ollama
 ```
 
-## Getting Your Course URL
+## The Workflow
 
-1. Go to [jkodirect.jten.mil](https://jkodirect.jten.mil/)
-2. Log in to your account
-3. Find the course you want to automate
-4. Copy the full URL from your browser's address bar
-5. Use that URL with the script
+1. **Run the script**: `python jko_course_automation.py`
+2. **Browser opens** at jkodirect.jten.mil
+3. **You log in** using your normal credentials (CAC, username/password, etc.)
+4. **Navigate to a course** by clicking on it
+5. **Press Enter** in the terminal when you're on the course page
+6. **AI takes over** and completes the entire course automatically!
 
-Example URL format:
-```
-https://jkodirect.jten.mil/path/to/course/USA-AU-01
-```
+No need to copy/paste course URLs - just run the script and log in normally!
 
 ## First Run Example
 
 ```bash
-# With visible browser (recommended for first time)
-python jko_course_automation.py 'YOUR_COURSE_URL' --debug
+# With debug output (recommended for first time)
+python jko_course_automation.py --debug
 
-# Watch as the AI navigates through the course
+# 1. Browser window opens
+# 2. Log in to JKO manually
+# 3. Click on the course you want
+# 4. Terminal shows: "Press Enter when ready..."
+# 5. Press Enter
+# 6. Watch as the AI navigates through the course!
 # Screenshots will be saved to screenshots/ folder
 ```
 

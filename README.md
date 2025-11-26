@@ -74,53 +74,71 @@ Choose one of the following:
 
 ## Usage
 
+### Standard Workflow
+
+The script follows a simple 3-step process:
+
+1. **Script opens JKO home page** - Browser window opens at jkodirect.jten.mil
+2. **You log in manually** - Use your credentials (CAC, username/password, etc.)
+3. **Navigate to a course** - Click on the course you want to complete
+4. **Press Enter** - The AI takes over and completes the course automatically
+
 ### Basic Usage with Claude API
 
 ```bash
-python jko_course_automation.py "https://jkodirect.jten.mil/path/to/course"
+# Start the script
+python jko_course_automation.py
+
+# Browser opens, you log in and navigate to a course
+# Press Enter when ready
+# AI takes over and completes the course!
 ```
 
 ### Using Ollama (Local)
 
 ```bash
-python jko_course_automation.py "https://jkodirect.jten.mil/path/to/course" --ai-provider ollama
+python jko_course_automation.py --ai-provider ollama
+
+# Follow the same login process
+# Press Enter when on course page
 ```
 
 ### Advanced Options
 
 ```bash
-# Run with debug output
-python jko_course_automation.py "COURSE_URL" --debug
+# Run with debug output (recommended for first time)
+python jko_course_automation.py --debug
 
-# Run in headless mode (no visible browser)
-python jko_course_automation.py "COURSE_URL" --headless
+# Start at a specific URL (e.g., if already logged in)
+python jko_course_automation.py --start-url "https://jkodirect.jten.mil/my/courses"
 
 # Use specific Ollama model
-python jko_course_automation.py "COURSE_URL" --ai-provider ollama --ollama-model llava:13b
+python jko_course_automation.py --ai-provider ollama --ollama-model llava:13b
 
 # Specify Claude API key directly
-python jko_course_automation.py "COURSE_URL" --claude-api-key "sk-ant-..."
+python jko_course_automation.py --claude-api-key "sk-ant-..."
 
 # Set maximum iterations (default: 500)
-python jko_course_automation.py "COURSE_URL" --max-iterations 1000
+python jko_course_automation.py --max-iterations 1000
+
+# Note: --headless mode is NOT recommended as you need to log in manually
 ```
 
 ### Full Command Line Options
 
 ```
-usage: jko_course_automation.py [-h] [--ai-provider {claude,ollama}]
+usage: jko_course_automation.py [-h] [--start-url START_URL]
+                                [--ai-provider {claude,ollama}]
                                 [--claude-api-key CLAUDE_API_KEY]
                                 [--ollama-url OLLAMA_URL]
                                 [--ollama-model OLLAMA_MODEL]
                                 [--headless] [--debug]
                                 [--max-iterations MAX_ITERATIONS]
-                                course_url
-
-positional arguments:
-  course_url            URL of the JKO course to complete
 
 optional arguments:
   -h, --help            show this help message and exit
+  --start-url START_URL
+                        URL to start at (default: https://jkodirect.jten.mil/)
   --ai-provider {claude,ollama}
                         AI provider to use (default: claude)
   --claude-api-key CLAUDE_API_KEY
@@ -129,13 +147,22 @@ optional arguments:
                         Ollama server URL (default: http://localhost:11434)
   --ollama-model OLLAMA_MODEL
                         Ollama model to use (default: llava)
-  --headless            Run browser in headless mode
+  --headless            Run browser in headless mode (not recommended)
   --debug               Enable debug output
   --max-iterations MAX_ITERATIONS
                         Maximum iterations before stopping (default: 500)
 ```
 
 ## How It Works
+
+### Phase 1: Manual Login (You Control)
+
+1. **Browser Opens**: Script opens JKO home page
+2. **You Log In**: Manually log in using your credentials
+3. **Select Course**: Navigate to and open the course you want to complete
+4. **Confirm**: Press Enter in the terminal to hand control to AI
+
+### Phase 2: AI Automation (AI Controls)
 
 1. **Screen Capture**: Takes screenshots of the current course page
 2. **AI Analysis**: Sends screenshots to AI (Claude or Ollama) for analysis
@@ -147,6 +174,8 @@ optional arguments:
    - Submit tests
 4. **Action Execution**: Executes the AI's decision
 5. **Repeat**: Continues until course is complete
+
+The AI adapts to different course layouts automatically, making intelligent decisions based on visual analysis of each page.
 
 ## Screenshots
 
@@ -203,11 +232,13 @@ chmod +x jko_course_automation.py
 
 ## Important Notes
 
+- **Security First**: Manual login means you never share your credentials with the script - your authentication stays secure
 - **Educational Use**: This tool is intended for authorized educational purposes only
 - **Rate Limiting**: The script includes delays to avoid overwhelming the JKO servers
 - **Monitoring**: While the script is automated, it's recommended to monitor progress
 - **Manual Intervention**: Some courses may require manual intervention for unusual layouts
 - **Network Requirements**: Ensure stable internet connection for both JKO access and AI API calls
+- **CAC Support**: Works with CAC (Common Access Card) authentication since you log in manually
 
 ## Architecture
 

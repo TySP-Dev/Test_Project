@@ -329,20 +329,122 @@ Respond with ONLY the JSON object, nothing else."""
             print(f"Error selecting answer: {e}")
             return False
 
-    async def run_course(self, course_url: str, max_iterations: int = 500):
+    async def wait_for_user_login(self):
+        """Wait for user to manually log in"""
+        print("\n" + "=" * 60)
+        print("MANUAL LOGIN REQUIRED")
+        print("=" * 60)
+        print("Please log in to JKO in the browser window.")
+        print("Once logged in, navigate to the course you want to automate.")
+        print("Press Enter in this terminal when you're on the course page")
+        print("and ready to start automation...")
+        print("=" * 60 + "\n")
+
+        # Wait for user confirmation
+        await asyncio.get_event_loop().run_in_executor(None, input)
+
+        # Take a screenshot to confirm
+        await self.take_screenshot("ready_to_start")
+        print("Starting automation...\n")
+
+    async def detect_course_list(self) -> List[Dict[str, str]]:
+        """Detect available courses on the page"""
+        screenshot = await self.take_screenshot("course_detection")
+
+        prompt = """Analyze this screenshot from JKO (Joint Knowledge Online).
+If you see a list of available courses, extract them.
+Look for course titles, course codes (like USA-AU-01), and clickable links.
+
+Respond ONLY with a JSON object (no markdown) with this structure:
+{
+    "has_courses": true/false,
+    "courses": [
+        {"title": "Course Name", "code": "USA-AU-01", "element_text": "visible text to click"},
+        ...
+    ]
+}
+
+If no course list is visible, respond with:
+{"has_courses": false, "courses": []}"""
+
+        response = await self.ai_provider.analyze_screen(screenshot, prompt)
+
+        if self.debug:
+            print(f"\nCourse detection response:\n{response}\n")
+
+        response = response.strip()
+        if response.startswith("```"):
+            lines = response.split('\n')
+            response = '\n'.join([l for l in lines if not l.startswith('```')])
+            response = response.strip()
+
+        try:
+            result = json.loads(response)
+            return result.get("courses", [])
+        except:
+            return []
+
+    async def select_course_from_list(self, course_index: int) -> bool:
+        """Click on a course from the detected list"""
+        courses = await self.detect_course_list()
+
+        if not courses or course_index >= len(courses):
+            print(f"Could not find course at index {course_index}")
+            return False
+
+        course = courses[course_index]
+        print(f"Attempting to select: {course.get('title', 'Unknown')} ({course.get('code', 'N/A')})")
+
+        element_text = course.get('element_text', course.get('title', ''))
+
+        # Try to find and click the course link
+        try:
+            # Try various selectors
+            selectors = [
+                f"a:has-text('{element_text}')",
+                f"*:has-text('{course.get('code', '')}')",
+            ]
+
+            for selector in selectors:
+                try:
+                    element = await self.page.query_selector(selector)
+                    if element and await element.is_visible():
+                        await element.click()
+                        await self.wait_for_page_load()
+                        print(f"Selected course successfully")
+                        return True
+                except:
+                    continue
+
+        except Exception as e:
+            if self.debug:
+                print(f"Error selecting course: {e}")
+
+        return False
+
+    async def run_course(self, start_url: str = "https://jkodirect.jten.mil/",
+                        max_iterations: int = 500,
+                        auto_login: bool = False):
         """Main loop to complete a course"""
-        print(f"Starting course automation for: {course_url}")
+        print(f"Starting JKO automation...")
 
         await self.start_browser()
 
         try:
-            # Navigate to course
-            await self.page.goto(course_url)
+            # Navigate to JKO home page
+            print(f"Navigating to: {start_url}")
+            await self.page.goto(start_url)
             await self.wait_for_page_load()
+
+            # Wait for user to log in and navigate to course
+            if not auto_login:
+                await self.wait_for_user_login()
 
             iteration = 0
             consecutive_waits = 0
             max_consecutive_waits = 3
+
+            print("\n🤖 AI is now in control...\n")
 
             while iteration < max_iterations:
                 iteration += 1
@@ -430,11 +532,27 @@ Respond with ONLY the JSON object, nothing else."""
 
 async def main():
     parser = argparse.ArgumentParser(
-        description="Automate JKO course completion using AI vision"
+        description="Automate JKO course completion using AI vision",
+        epilog="""
+Examples:
+  # Start at JKO home page, log in manually, then let AI take over
+  python jko_course_automation.py
+
+  # Start at specific URL (still requires manual login)
+  python jko_course_automation.py --start-url "https://jkodirect.jten.mil/my/courses"
+
+  # Use Ollama instead of Claude
+  python jko_course_automation.py --ai-provider ollama
+
+  # Enable debug mode to see detailed output
+  python jko_course_automation.py --debug
+        """,
+        formatter_class=argparse.RawDescriptionHelpFormatter
     )
     parser.add_argument(
-        "course_url",
-        help="URL of the JKO course to complete"
+        "--start-url",
+        default="https://jkodirect.jten.mil/",
+        help="URL to start at (default: https://jkodirect.jten.mil/)"
     )
     parser.add_argument(
         "--ai-provider",
@@ -459,7 +577,7 @@ async def main():
     parser.add_argument(
         "--headless",
         action="store_true",
-        help="Run browser in headless mode"
+        help="Run browser in headless mode (not recommended for login)"
     )
     parser.add_argument(
         "--debug",
@@ -495,7 +613,11 @@ async def main():
     )
 
     # Run the course
-    await automation.run_course(args.course_url, max_iterations=args.max_iterations)
+    await automation.run_course(
+        start_url=args.start_url,
+        max_iterations=args.max_iterations,
+        auto_login=False
+    )
 
 
 if __name__ == "__main__":
